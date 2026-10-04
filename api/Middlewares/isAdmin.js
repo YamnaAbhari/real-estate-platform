@@ -1,0 +1,10 @@
+const isAdmin=(req,res,next)=>{
+    if(req.role!='admin'){
+        return res.status(401).json({
+            success:false,
+            message:"شما اجازه دسترسی به این صفحه را ندارید"
+        })
+    }
+    next()
+}
+export default isAdmin

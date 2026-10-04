@@ -1,0 +1,76 @@
+diff --git a/node_modules/vanta-api/src/api-features.js b/node_modules/vanta-api/src/api-features.js
+index fbb0f1e..ac5dd82 100644
+--- a/node_modules/vanta-api/src/api-features.js
++++ b/node_modules/vanta-api/src/api-features.js
+@@ -69,29 +69,53 @@ export class ApiFeatures {
+     return this;
+   }
+ 
++  // search(fields = []) {
++  //   const q = this.query.q;
++  //   if (!q || !Array.isArray(fields) || !fields.length) return this;
++
++  //   const safeQ = this._escapeRegex(String(q).trim());
++  //   if (!safeQ) return this;
++
++  //   const conditions = fields
++  //     .filter((field) => typeof field === "string" && field.trim())
++  //     .map((field) => ({
++  //       [field]: { $regex: safeQ, $options: "i" },
++  //     }));
++
++  //   if (conditions.length) {
++  //     this.pipeline.push({
++  //       $match: {
++  //         $or: conditions,
++  //       },
++  //     });
++  //   }
++
++  //   return this;
++  // }
++
+   search(fields = []) {
+-    const q = this.query.q;
+-    if (!q || !Array.isArray(fields) || !fields.length) return this;
++  const q = this.query.q;
++  if (!q || !Array.isArray(fields) || !fields.length) return this;
+ 
+-    const safeQ = this._escapeRegex(String(q).trim());
+-    if (!safeQ) return this;
++  const words = String(q).trim().split(/[\s,،_\/-]+/).filter(Boolean);
++  if (!words.length) return this;
+ 
+-    const conditions = fields
+-      .filter((field) => typeof field === "string" && field.trim())
+-      .map((field) => ({
+-        [field]: { $regex: safeQ, $options: "i" },
+-      }));
++  const validFields = fields.filter(f => typeof f === "string" && f.trim());
++  if (!validFields.length) return this;
+ 
+-    if (conditions.length) {
+-      this.pipeline.push({
+-        $match: {
+-          $or: conditions,
+-        },
+-      });
+-    }
+ 
+-    return this;
+-  }
++  const andConditions = words.map(word => {
++    const safe = this._escapeRegex(word);
++    return {
++      $or: validFields.map(field => ({
++        [field]: { $regex: safe, $options: "i" }
++      }))
++    };
++  });
++
++  this.pipeline.push({ $match: { $and: andConditions } });
++  return this;
++}
+ 
+   sort() {
+     if (!this.query.sort) return this;
